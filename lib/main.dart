@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile_scanner/mobile_scanner.dart';
+
 import 'dart:convert';
 
 void main() {
-  runApp(const MyApp());
+  runApp( MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -11,7 +13,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return  MaterialApp(
       title: 'Website Security Checker',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -19,7 +21,7 @@ class MyApp extends StatelessWidget {
       ),
       home: const SecurityCheckerScreen(),
     );
-  }
+ }
 }
 
 class SecurityCheckerScreen extends StatefulWidget {
@@ -74,16 +76,51 @@ class _SecurityCheckerScreenState extends State<SecurityCheckerScreen> {
     }
   }
 
+  void _openCameraAndScan() async {
+    bool isBarcodeFound = false;
+
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MobileScanner(
+          controller:  MobileScannerController(
+            detectionSpeed: DetectionSpeed.normal,
+          ),
+          onDetect: (capture) {
+            if(isBarcodeFound){
+              return;
+            }
+            final List<Barcode> barcodes = capture.barcodes;
+
+            for (final barcode in barcodes) {
+              if (barcode.type == BarcodeType.url || barcode.type == BarcodeType.text) {
+                setState(() {
+                  _urlController.text = barcode.rawValue!;
+                  isBarcodeFound = true;
+
+                });
+                Navigator.pop(context);
+
+              }
+              isBarcodeFound = true;
+            }
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar:  AppBar(
         title: const Text('Website Security Checker'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: Padding(
+      body:  Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
+        child:  Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
@@ -94,48 +131,55 @@ class _SecurityCheckerScreenState extends State<SecurityCheckerScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () {
-                    if (_urlController.text.isNotEmpty) {
-                      _checkSecurity(_urlController.text);
-                    }
-                  },
+                suffixIcon: Row(
+                  mainAxisSize:  MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.camera_alt),
+                      onPressed: _openCameraAndScan,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.search),
+                      onPressed: () {
+                        if (_urlController.text.isNotEmpty) _checkSecurity(_urlController.text);
+                      },
+                    ),
+                  ],
                 ),
               ),
               onSubmitted: (value) {
                 if (value.isNotEmpty) {
                   _checkSecurity(value);
-                }
+                 }
               },
             ),
-            const SizedBox(height: 20),
+            const  SizedBox(height: 20),
             if (_isLoading)
-              const Expanded(child: Center(child: CircularProgressIndicator()))
+               Expanded(child: Center(child: CircularProgressIndicator()))
             else if (_error != null)
               Expanded(
-                child: Card(
+                 child: Card(
                   color: Colors.red.shade100,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                  child:  Padding(
+                    padding:  EdgeInsets.all(16.0),
+                    child:  Text(_error!, style: const TextStyle(color: Colors.red)),
                   ),
                 ),
               )
             else if (_securityResults != null)
               Expanded(
-                child: SingleChildScrollView(
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Column(
+                 child: SingleChildScrollView(
+                  child:  Card(
+                    child:  Padding(
+                      padding:  EdgeInsets.all(12.0),
+                      child:  Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildResultItem('HTTPS',
+                          _buildResultItem('HTTPS', 
                             _securityResults!['https'] ? '✅ Enabled' : '❌ Not enabled',
                             _securityResults!['https'] ? Colors.green : Colors.red
                           ),
-                          _buildResultItem('Status Code', 
+                          _buildResultItem('Status Code',
                             '${_securityResults!['status_code']}',
                             _securityResults!['status_code'] == 200 ? Colors.green : Colors.orange
                           ),
@@ -168,12 +212,12 @@ class _SecurityCheckerScreenState extends State<SecurityCheckerScreen> {
     );
   }
 
-  Widget _buildResultItem(String title, String value, Color color) {
+   Widget _buildResultItem(String title, String value, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
+      child:  Row(
         children: [
-          Text(
+           Text(
             '$title: ',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
@@ -186,13 +230,13 @@ class _SecurityCheckerScreenState extends State<SecurityCheckerScreen> {
     );
   }
 
-  Widget _buildHeaderItem(String header, String value) {
-    return Padding(
+   Widget _buildHeaderItem(String header, String value) {
+    return  Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Column(
+      child:  Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+           Text(
             header,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
@@ -201,7 +245,7 @@ class _SecurityCheckerScreenState extends State<SecurityCheckerScreen> {
             style: TextStyle(
               color: value == 'Not found' ? Colors.red : Colors.green,
             )
-          ),
+          ), 
           const SizedBox(height: 8),
         ],
       ),
